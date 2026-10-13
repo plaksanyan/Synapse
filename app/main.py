@@ -8,6 +8,7 @@ app = FastAPI(title="Synapse API", version="0.1.0", description="Adaptive spaced
 app.include_router(auth.router)
 app.include_router(decks.router)
 app.include_router(cards.router)
+app.include_router(cards.card_router)
 app.include_router(due.router)
 app.include_router(review.router)
 app.include_router(stats.router)

@@ -1,16 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from ..auth import get_current_user
 from ..database import get_db
 from ..models import Card, Deck, SynapticWeight, User
-from ..schemas import CardCreate, CardOut, ImportRequest
+from ..schemas import CardCreate, CardOut, CardUpdate, ImportRequest
 from .decks import owned_deck
 from ..importers.txt_importer import parse_txt
 from ..importers.cloze_parser import parse_cloze
 from ..importers.anki_importer import parse_anki_text
 
 router = APIRouter(prefix="/decks/{deck_id}", tags=["cards"])
+card_router = APIRouter(prefix="/cards", tags=["cards"])
 @router.get("/cards", response_model=list[CardOut])
 def list_cards(deck_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     owned_deck(db, deck_id, user.id)
@@ -44,3 +45,25 @@ def import_cards(deck_id: int, data: ImportRequest, db: Session = Depends(get_db
     for card in created:
         db.refresh(card)
     return created
+
+@card_router.put("/{card_id}", response_model=CardOut)
+def update_card(card_id: int, data: CardUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    card = db.get(Card, card_id)
+    if card is None or db.scalar(select(Deck.id).where(Deck.id == card.deck_id, Deck.user_id == user.id)) is None:
+        raise HTTPException(404, "Card not found")
+    changes = data.model_dump(exclude_unset=True, exclude_none=True)
+    if not changes:
+        raise HTTPException(422, "Provide at least one field to update")
+    for field, value in changes.items():
+        setattr(card, field, value)
+    db.commit(); db.refresh(card)
+    return card
+
+@card_router.delete("/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_card(card_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    card = db.get(Card, card_id)
+    if card is None or db.scalar(select(Deck.id).where(Deck.id == card.deck_id, Deck.user_id == user.id)) is None:
+        raise HTTPException(404, "Card not found")
+    db.delete(card)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

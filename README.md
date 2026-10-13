@@ -12,7 +12,9 @@ $env:SYNAPSE_SECRET_KEY = "replace-with-a-long-random-secret"
 uvicorn app.main:app --reload
 ```
 
-Open `http://127.0.0.1:8000/docs` for interactive API documentation. For the first SQLite release, tables are created automatically. Set `DATABASE_URL` to a SQLAlchemy URL to use another database. For schema versioning use `alembic upgrade head`.
+Open `http://127.0.0.1:8000/docs` for interactive API documentation. For the first SQLite release, tables are created automatically. Set `DATABASE_URL` to a SQLAlchemy URL to use another database. Apply schema updates with `alembic upgrade head`; this release adds JSON settings to existing decks.
+
+Decks can be renamed, deleted, and updated with arbitrary JSON `settings` through `PUT /decks/{id}`. Card text can be partially updated through `PUT /cards/{id}`. `GET /decks/{id}/cards` returns all cards in the deck. Deck statistics include per-card memory weights under `card_weights` for the client card detail screen.
 
 ## Authentication and ownership
 

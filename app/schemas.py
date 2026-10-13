@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 class UserCreate(BaseModel):
@@ -14,16 +15,25 @@ class Token(BaseModel):
     token_type: str = "bearer"
 class DeckCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
+    settings: dict = Field(default_factory=dict)
+class DeckUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    settings: dict | None = None
 class DeckOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     user_id: int
     name: str
+    settings: dict
     created_at: datetime
 class CardCreate(BaseModel):
     front: str = Field(min_length=1)
     back: str = Field(min_length=1)
-    format: str = "text"
+    format: Literal["text", "markdown", "cloze"] = "text"
+class CardUpdate(BaseModel):
+    front: str | None = Field(default=None, min_length=1)
+    back: str | None = Field(default=None, min_length=1)
+    format: Literal["text", "markdown", "cloze"] | None = None
 class CardOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
